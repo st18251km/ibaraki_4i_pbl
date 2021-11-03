@@ -181,20 +181,18 @@ def dec_data(cipher_data, tag, nonce):
 
 @app.route("/add_student", methods=['POST'])
 def add_student():
-	print(request.data['name'])
+	request.data['name']
 
-	"""
-    name = student_data["name"]
+    name = request.data['name']
     cipher = AES.new(AES_SECRET_KEY.encode('utf-8'), AES.MODE_EAX)
     cipher_name, tag = cipher.encrypt_and_digest(name.encode('utf-8'))
 
     student_instance = Student(
-        cipher_name.decode(), student_data["data"], tag.decode(
+        cipher_name.decode(), request.data["date"], tag.decode(
         ), cipher.nonce.decode()
     )
     db.session.add(student_instance)
     db.session.commit()
-	"""
 
 
 @app.route("/callback", methods=['POST'])
