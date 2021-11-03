@@ -183,6 +183,7 @@ def dec_data(cipher_data, tag, nonce):
 def add_student():
 	request.data['name']
 
+	"""
     name = request.data['name']
     cipher = AES.new(AES_SECRET_KEY.encode('utf-8'), AES.MODE_EAX)
     cipher_name, tag = cipher.encrypt_and_digest(name.encode('utf-8'))
@@ -193,6 +194,7 @@ def add_student():
     )
     db.session.add(student_instance)
     db.session.commit()
+	"""
 
 
 @app.route("/callback", methods=['POST'])
