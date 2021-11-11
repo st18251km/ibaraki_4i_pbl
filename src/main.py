@@ -78,8 +78,8 @@ class AdminUser(db.Model):
 
 
 class LoginForm(form.Form):
-    login = fields.StringField(validators=[validators.required()])
-    password = fields.PasswordField(validators=[validators.required()])
+    login = fields.StringField()
+    password = fields.PasswordField()
 
     def validate_login(self, field):
         user = self.get_user()
