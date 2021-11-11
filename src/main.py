@@ -1,4 +1,3 @@
-from re import A
 from flask import Flask, abort, jsonify, render_template, request, redirect, url_for
 from flask_sqlalchemy import SQLAlchemy
 
