@@ -95,8 +95,8 @@ class LoginForm(form.Form):
 
 
 class RegistrationForm(form.Form):
-    login = fields.StringField(validators=[validators.required()])
-    password = fields.PasswordField(validators=[validators.required()])
+    login = fields.StringField()
+    password = fields.PasswordField()
 
     def validate_login(self, field):
         if db.session.query(AdminUser).filter_by(login=self.login.data).count() > 0:
