@@ -9,7 +9,7 @@ from flask_admin import helpers, expose
 from flask_admin.contrib.sqla import ModelView
 from werkzeug.security import generate_password_hash, check_password_hash
 
-from Crypto.Cipher import AES
+from simplecrypt import encrypt, decrypt
 
 from linebot import (
     LineBotApi, WebhookHandler
@@ -20,7 +20,9 @@ from linebot.exceptions import (
 from linebot.models import (
     MessageEvent, TextMessage, TextSendMessage,
 )
+
 import os
+import datetime
 
 
 app = Flask(__name__)
@@ -44,15 +46,11 @@ handler = WebhookHandler(YOUR_CHANNEL_SECRET)
 class Student(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name_encrypted = db.Column(db.String(500), nullable=False)
-    toban_date = db.Column(db.DateTime, nullable=False)
-    tag = db.Column(db.String(500), nullable=False)
-    nonce = db.Column(db.String(500), nullable=False)
+    toban_date = db.Column(db.Date, nullable=False)
 
-    def __init__(self, name_encrypted, toban_date, tag, nonce):
+    def __init__(self, name_encrypted, toban_date):
         self.name_encrypted = name_encrypted
         self.toban_date = toban_date
-        self.tag = tag
-        self.nonce = nonce
 
 
 class AdminUser(db.Model):
@@ -80,8 +78,8 @@ class AdminUser(db.Model):
 
 
 class LoginForm(form.Form):
-    login = fields.StringField(validators=[validators.required()])
-    password = fields.PasswordField(validators=[validators.required()])
+    login = fields.StringField()
+    password = fields.PasswordField()
 
     def validate_login(self, field):
         user = self.get_user()
@@ -97,8 +95,8 @@ class LoginForm(form.Form):
 
 
 class RegistrationForm(form.Form):
-    login = fields.StringField(validators=[validators.required()])
-    password = fields.PasswordField(validators=[validators.required()])
+    login = fields.StringField()
+    password = fields.PasswordField()
 
     def validate_login(self, field):
         if db.session.query(AdminUser).filter_by(login=self.login.data).count() > 0:
@@ -172,29 +170,68 @@ admin.add_view(MyModelView(AdminUser, db.session))
 admin.add_view(MyModelView(Student, db.session))
 
 
-def dec_data(cipher_data, tag, nonce):
-    # 暗号化されたデータを復号
-    cipher_dec = AES.new(AES_SECRET_KEY, AES.MODE_EAX, nonce)
-    dec_data = cipher_dec.decrypt_and_verify(cipher_data, tag)
-    return dec_data
+def dec_name(toban_date):
+    student = db.session.query(Student).filter_by(toban_date=toban_date).first()
+    name = decrypt(AES_SECRET_KEY, student.name_encrypted)
+    return name.decode()
+
+def find_student():
+    return dec_name(datetime.date.today())
+
+@app.route("/healthcheck", methods=['GET'])
+def health_check():
+    return jsonify({
+        "status": "success"
+    })
 
 
 @app.route("/add_student", methods=['POST'])
 def add_student():
-	request.data['name']
+    request_json_data = request.get_json()
+    print(request_json_data)
 
-	"""
-    name = request.data['name']
-    cipher = AES.new(AES_SECRET_KEY.encode('utf-8'), AES.MODE_EAX)
-    cipher_name, tag = cipher.encrypt_and_digest(name.encode('utf-8'))
+    try:
+        student_name = request_json_data["name"]
+        toban_date = request_json_data["date"]
 
-    student_instance = Student(
-        cipher_name.decode(), request.data["date"], tag.decode(
-        ), cipher.nonce.decode()
-    )
-    db.session.add(student_instance)
-    db.session.commit()
-	"""
+        cipher_name = encrypt(AES_SECRET_KEY, student_name)
+
+        request_date = datetime.date(
+            int(toban_date.split('-')[0]),
+            int(toban_date.split('-')[1]),
+            int(toban_date.split('-')[2])
+        )
+
+        student_instance = Student(
+            cipher_name, request_date
+        )
+        db.session.add(student_instance)
+        db.session.commit()
+        return jsonify({
+            "status": "success"
+        })
+    except Exception as e:
+        print(e)
+        return jsonify({
+            "status": "failed"
+        })
+
+
+#週に1回プッシュ通知
+@app.route("/push_toban", methods=['POST'])
+def push_toban():
+    date = datetime.date.today()
+    group_id = "1111"
+    try:
+        line_bot_api.push_message(group_id, TextSendMessage(text=f"(PUSH)今週の週番は{find_student()}です。水曜日は掃除をしてください。"))
+        return jsonify({
+            "status": "success"
+        })
+    except Exception as e:
+        print(e)
+        return jsonify({
+            "status": "failed"
+        })
 
 
 @app.route("/callback", methods=['POST'])
@@ -210,13 +247,19 @@ def callback():
 
     return 'OK'
 
-
 @handler.add(MessageEvent, message=TextMessage)
 def handle_message(event):
-    line_bot_api.reply_message(
-        event.reply_token,
-        TextSendMessage(text=event.message.text)
-    )
+    if event.type == "message":
+        if (event.message.text == "週番"):
+            line_bot_api.reply_message(
+                event.reply_token,
+                TextSendMessage(text=f"今週の週番は{find_student()}です。水曜日は掃除をしてください。")
+            )
+        if (event.message.text == "グループ"):
+            line_bot_api.reply_message(
+                event.reply_token,
+                TextSendMessage(text=f"{event.source.group_id}")
+            )
 
 
 if __name__ == "__main__":
