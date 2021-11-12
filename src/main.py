@@ -175,6 +175,9 @@ def dec_name(toban_date):
     name = decrypt(AES_SECRET_KEY, student.name_encrypted)
     return name.decode()
 
+def find_student():
+    return dec_name(datetime.date.today())
+
 @app.route("/healthcheck", methods=['GET'])
 def health_check():
     return jsonify({
@@ -230,10 +233,12 @@ def callback():
 
 @handler.add(MessageEvent, message=TextMessage)
 def handle_message(event):
-    line_bot_api.reply_message(
-        event.reply_token,
-        TextSendMessage(text=event.message.text)
-    )
+    if event.type == "message":
+        if (event.message.text == "週番"):
+            line_bot_api.reply_message(
+                event.reply_token,
+                TextSendMessage(text=f"今週の週番は{find_student()}です。水曜日は掃除をしてください。")
+            )
 
 
 if __name__ == "__main__":
