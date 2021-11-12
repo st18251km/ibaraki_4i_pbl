@@ -215,6 +215,7 @@ def add_student():
         return jsonify({
             "status": "failed"
         })
+<<<<<<< HEAD
 
 #週に1回プッシュ通知
 @app.route("/push_toban", methods=['POST'])
@@ -230,6 +231,8 @@ def push_toban():
         return jsonify({
             "status": "failed"
         })
+=======
+>>>>>>> 854a1a8b4098717e39ca31d1100b3183f34674e2
 
 
 @app.route("/callback", methods=['POST'])
@@ -253,11 +256,14 @@ def handle_message(event):
                 event.reply_token,
                 TextSendMessage(text=f"今週の週番は{find_student()}です。水曜日は掃除をしてください。")
             )
+<<<<<<< HEAD
         if (event.message.text == "グループ"):
             line_bot_api.reply_message(
                 event.reply_token,
                 TextSendMessage(text=f"{event.source.group_id}")
             )
+=======
+>>>>>>> 854a1a8b4098717e39ca31d1100b3183f34674e2
 
 
 if __name__ == "__main__":
