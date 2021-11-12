@@ -221,7 +221,7 @@ def add_student():
 def push_toban():
     group_id = "1111"
     try:
-        line_bot_api.push_message(group_id, TextSendMessage(text=f"(PUSH)今週の週番は{find_student()}です。水曜日は掃除をしてください。"))
+        line_bot_api.push_message(group_id, TextSendMessage(text=f"今週の週番は{find_student()}です。水曜日は掃除をしてください。"))
         return jsonify({
             "status": "success"
         })
